@@ -1,0 +1,87 @@
+# Default configuration for streamsense-har.
+# Override any field on the command line with OmegaConf dotlist syntax.
+
+seed: 42
+
+paths:
+  raw_dir: data/raw
+  processed_dir: data/processed
+  artifacts_dir: artifacts
+  checkpoints_dir: artifacts/checkpoints
+  onnx_dir: artifacts/onnx
+  reports_dir: artifacts/reports
+  tensorboard_dir: artifacts/tensorboard
+
+data:
+  sampling_rate_hz: 100
+  window_seconds: 5.12
+  overlap: 0.5
+  hr_resample_method: ffill
+  # 12 activity classes from the PAMAP2 protocol.
+  # Activity IDs from PAMAP2 docs: 1,2,3,4,5,6,7,12,13,16,17,24.
+  activity_ids: [1, 2, 3, 4, 5, 6, 7, 12, 13, 16, 17, 24]
+  activity_names:
+    1: lying
+    2: sitting
+    3: standing
+    4: walking
+    5: running
+    6: cycling
+    7: nordic_walking
+    12: ascending_stairs
+    13: descending_stairs
+    16: vacuum_cleaning
+    17: ironing
+    24: rope_jumping
+  subjects: [1, 2, 3, 4, 5, 6, 7, 8, 9]
+  # Channels per IMU: 3 accel + 3 gyro + 3 mag = 9 channels.
+  imu_channels: 9
+  # Heart rate is a single channel after resampling.
+  hr_channels: 1
+  fixed_split:
+    train: [1, 2, 3, 4, 7, 8, 9]
+    val:   [5]
+    test:  [6]
+
+model:
+  name: multimodal_late_fusion
+  d_model: 128
+  cnn_channels: [64, 128, 256]
+  cnn_kernel: 5
+  transformer_layers: 2
+  transformer_heads: 4
+  dropout: 0.2
+  classifier_hidden: 256
+  num_classes: 12
+
+train:
+  batch_size: 128
+  num_workers: 4
+  max_epochs: 60
+  precision: 32
+  lr: 0.001
+  weight_decay: 0.0001
+  label_smoothing: 0.1
+  mixup_alpha: 0.2
+  class_weighting: inverse_freq
+  early_stopping_patience: 10
+  monitor: val_macro_f1
+  monitor_mode: max
+  onecycle_pct_start: 0.1
+  grad_clip: 1.0
+
+eval:
+  save_confusion_matrix: true
+  save_ablation: true
+
+export:
+  opset: 17
+  dynamic_batch: true
+  calibration_windows: 256
+
+serve:
+  host: 0.0.0.0
+  port: 8000
+  model_path: artifacts/onnx/streamsense_int8.onnx
+  expect_window_samples: 512
+  expect_sampling_rate_hz: 100
