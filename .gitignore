@@ -48,6 +48,7 @@ artifacts/checkpoints/
 artifacts/onnx/
 artifacts/tensorboard/
 artifacts/logs/
+artifacts/reports/
 *.ckpt
 *.onnx
 *.npy
