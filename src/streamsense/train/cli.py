@@ -154,7 +154,13 @@ def main() -> int:
 
     trainer.fit(lit, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-    best = trainer.checkpoint_callback.best_model_path if trainer.checkpoint_callback else None
+    ckpt_cb = trainer.checkpoint_callback
+    best = ckpt_cb.best_model_path if ckpt_cb else None
+    best_score = (
+        float(ckpt_cb.best_model_score.item())
+        if ckpt_cb is not None and ckpt_cb.best_model_score is not None
+        else None
+    )
     summary = {
         "fold": args.fold,
         "model_name": cfg.model.name,
@@ -163,8 +169,8 @@ def main() -> int:
         "max_epochs": max_epochs,
         "train_size": len(train_ds),
         "val_size": len(val_ds),
-        "best_val_macro_f1": float(trainer.callback_metrics.get("val_macro_f1", 0.0)),
-        "best_val_acc": float(trainer.callback_metrics.get("val_acc", 0.0)),
+        "best_val_macro_f1": best_score,
+        "last_val_acc": float(trainer.callback_metrics.get("val_acc", 0.0)),
     }
     out = Path(cfg.paths.reports_dir) / f"{run_name}_train_summary.json"
     out.parent.mkdir(parents=True, exist_ok=True)

@@ -66,6 +66,11 @@ embeddings are concatenated and passed through a 2-layer classifier head.
 ## Results
 
 Single fold on PAMAP2 (placeholder; final numbers filled in after training).
+Numbers in this repo's checked-in run were produced on the **synthetic**
+PAMAP2-shaped data — `make prepare-synthetic` writes 60 s/activity/subject
+of structured but noisy IMU/HR traces, used so the entire pipeline runs
+in a sandboxed CI environment without the 700 MB raw dataset. To reproduce
+the real numbers, run `make download && make prepare` first.
 
 | Model | Macro F1 | Weighted F1 | Accuracy | Params |
 |---|---|---|---|---|
@@ -86,6 +91,7 @@ benchmark is run on real hardware — see `make benchmark`).
 | Variant | p50 (ms) | p95 (ms) | p99 (ms) |
 |---|---|---|---|
 | fp32 | TBD | TBD | TBD |
+| fp16 | TBD | TBD | TBD |
 | int8 | TBD | TBD | TBD |
 
 Target: int8 p95 under 20 ms on a modern laptop CPU. The test in
