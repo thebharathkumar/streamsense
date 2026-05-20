@@ -8,8 +8,9 @@ CONFIG ?= configs/default.yaml
 FOLD   ?= 1
 SUBSET ?= 0
 
-.PHONY: help install install-dev download prepare train train-fast \
-        evaluate export quantize benchmark serve docker test lint format clean
+.PHONY: help install install-dev download prepare prepare-synthetic \
+        train train-fast evaluate export quantize benchmark serve docker \
+        test lint format clean
 
 help:
 	@echo "Common targets:"
@@ -40,6 +41,9 @@ download:
 
 prepare:
 	$(PYTHON) scripts/prepare_data.py --config $(CONFIG)
+
+prepare-synthetic:
+	$(PYTHON) scripts/prepare_data.py --config $(CONFIG) --synthetic
 
 train:
 	$(PYTHON) scripts/train.py --config $(CONFIG) --fold $(FOLD)
