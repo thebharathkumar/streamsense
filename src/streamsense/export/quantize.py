@@ -80,6 +80,11 @@ def convert_fp16(fp32_path: Path, fp16_path: Path) -> Path:
 
     fp16_path.parent.mkdir(parents=True, exist_ok=True)
     model = onnx.load(str(fp32_path))
-    model_fp16 = float16.convert_float_to_float16(model, keep_io_types=False)
+    # keep_io_types=True so external feeds remain float32 (matches benchmark
+    # feeds and matches the FastAPI input contract). disable_shape_infer=True
+    # because the LayerNorm/transformer subgraphs trip the shape inferencer.
+    model_fp16 = float16.convert_float_to_float16(
+        model, keep_io_types=True, disable_shape_infer=True,
+    )
     onnx.save(model_fp16, str(fp16_path))
     return fp16_path

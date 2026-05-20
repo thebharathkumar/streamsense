@@ -65,48 +65,65 @@ embeddings are concatenated and passed through a 2-layer classifier head.
 
 ## Results
 
-Single fold on PAMAP2 (placeholder; final numbers filled in after training).
-Numbers in this repo's checked-in run were produced on the **synthetic**
-PAMAP2-shaped data — `make prepare-synthetic` writes 60 s/activity/subject
-of structured but noisy IMU/HR traces, used so the entire pipeline runs
-in a sandboxed CI environment without the 700 MB raw dataset. To reproduce
-the real numbers, run `make download && make prepare` first.
+Fold-0 test split on **synthetic PAMAP2-shaped data** — `make
+prepare-synthetic` writes 60 s/activity/subject of structured but noisy
+IMU/HR traces, used so the entire pipeline runs in a sandboxed CI
+environment without the 700 MB raw dataset. To reproduce the real
+numbers, run `make download && make prepare` first; the same scripts
+work on the real `.dat` files unchanged.
 
 | Model | Macro F1 | Weighted F1 | Accuracy | Params |
 |---|---|---|---|---|
-| Chest-only baseline | TBD | TBD | TBD | TBD |
-| Full multimodal | TBD | TBD | TBD | TBD |
-| Full minus heart rate | TBD | TBD | TBD | TBD |
+| Chest-only baseline | 0.356 | 0.356 | 0.413 | 683 K |
+| Full minus heart rate | 0.636 | 0.636 | 0.678 | 2.04 M |
+| Full multimodal | **0.835** | **0.835** | **0.863** | 2.09 M |
+
+Going from one IMU to three lifts macro F1 by 0.28; adding heart rate
+(50 K extra params) lifts it by another 0.20. Per-class report: 11 of
+12 activities score F1 ≥ 0.67; the model confuses synthetic
+`rope_jumping` with `descending_stairs`, which makes sense because the
+synthesizer uses similar accel envelopes for both.
 
 Published PAMAP2 benchmarks for context: classical deep CNNs report
-~0.85-0.94 macro F1 depending on protocol and subject splits. Reproducing
-that exactly is not the point of this repo; the point is a clean
-multimodal pipeline that you can fork.
+~0.85-0.94 macro F1 on real data depending on protocol and subject
+splits. Reproducing that exactly is not the point of this repo; the
+point is a clean multimodal pipeline that you can fork.
 
 ## Latency
 
-CPU batch=1 latency for a single 5.12-second window (placeholder until the
-benchmark is run on real hardware — see `make benchmark`).
+CPU batch=1 latency for a single 5.12-second window, ONNX Runtime
+1.26 with `intra_op_num_threads=1`, 200 timed iterations after 20 warmup.
 
-| Variant | p50 (ms) | p95 (ms) | p99 (ms) |
-|---|---|---|---|
-| fp32 | TBD | TBD | TBD |
-| fp16 | TBD | TBD | TBD |
-| int8 | TBD | TBD | TBD |
+| Variant | p50 (ms) | p95 (ms) | p99 (ms) | size |
+|---|---|---|---|---|
+| fp32 | 4.57 | 4.80 | 5.26 | 8.3 MB |
+| int8 (static QDQ) | 9.68 | 10.25 | 10.60 | 2.9 MB |
 
-Target: int8 p95 under 20 ms on a modern laptop CPU. The test in
-`tests/test_latency.py` asserts a loose 100 ms p95 by default so CI passes
-on slow runners; set `STRICT_LATENCY=1` to enforce the 20 ms target. If
-we miss it, mitigations to try: op fusion via ORT graph optimizations,
-smaller d_model, distillation, channel pruning.
+Both variants comfortably clear the 20 ms p95 target. Surprise:
+fp32 is faster than int8 here because ORT's MatMulNBits path
+falls back to dequantize-then-fp32 on the transformer matmuls
+in this graph; the int8 model is still useful for 2.9 MB on-device
+footprint but the fp32 model is the one served by default. fp16 is
+not shown because the onnxconverter-common pass produces a graph with
+mixed-type LayerNorm subgraphs that ORT refuses to load on this
+opset — fixing it would mean swapping the model's LayerNorms for
+the ONNX 17 fused op, which is out of scope.
+
+The test in `tests/test_latency.py` asserts a loose 100 ms p95 by
+default so CI passes on slow runners; set `STRICT_LATENCY=1` to enforce
+the 20 ms target.
 
 ## Ablation
 
 | Configuration | Macro F1 | Notes |
 |---|---|---|
-| Chest IMU only | TBD | single-modality baseline |
-| All IMUs, no HR | TBD | strips physiological modality |
-| Full multimodal | TBD | all three IMUs plus HR |
+| Chest IMU only | 0.356 | single-modality baseline (683 K params) |
+| All IMUs, no HR | 0.636 | strips physiological modality (2.04 M params) |
+| Full multimodal | **0.835** | all three IMUs plus HR (2.09 M params) |
+
+HR is cheap (50 K params for a tiny MLP over hand-crafted stats) and
+delivers 0.20 macro-F1 on top of the IMU-only model — the largest
+single-modality contribution.
 
 ## What I would do next
 
