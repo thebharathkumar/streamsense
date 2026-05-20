@@ -124,6 +124,16 @@ class HARLightning(pl.LightningModule):
         macro = _macro_f1(preds, targets, self.num_classes)
         self.log("val_acc", acc, prog_bar=True)
         self.log("val_macro_f1", macro, prog_bar=True)
+        # Always print one line per epoch so the run is followable when the
+        # Lightning progress bar is disabled.
+        train_loss = float(self.trainer.callback_metrics.get("train_loss", torch.tensor(float("nan"))))
+        val_loss = float(self.trainer.callback_metrics.get("val_loss", torch.tensor(float("nan"))))
+        print(
+            f"[epoch {self.current_epoch:>2d}] "
+            f"train_loss={train_loss:.4f} val_loss={val_loss:.4f} "
+            f"val_acc={acc:.4f} val_macro_f1={macro:.4f}",
+            flush=True,
+        )
 
     def configure_optimizers(self) -> Any:
         optim = AdamW(self.model.parameters(), lr=self.lr, weight_decay=self.weight_decay)

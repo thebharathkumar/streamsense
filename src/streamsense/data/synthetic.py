@@ -37,18 +37,24 @@ class ActivityProfile:
 
 
 def _profile_for(activity_id: int, idx: int) -> ActivityProfile:
-    """Deterministic activity-specific signal profile."""
+    """Deterministic activity-specific signal profile.
+
+    Per-activity frequencies overlap deliberately so the model has to combine
+    location signatures rather than reading off a single Fourier bin.
+    """
     rng = np.random.default_rng(seed=1000 + activity_id)
-    base = 0.2 + 1.8 * (idx / 12.0)
+    # 12 activities split into 4 motion clusters (rest, gait, climb, vigorous).
+    cluster = idx // 3
+    cluster_base = [0.4, 1.2, 2.0, 3.0][cluster]
     return ActivityProfile(
         name=f"act_{activity_id}",
-        freq_hand=float(rng.uniform(0.5, 4.5) * base),
-        freq_chest=float(rng.uniform(0.3, 3.0) * base),
-        freq_ankle=float(rng.uniform(0.5, 5.0) * base),
-        amp_hand=float(0.6 + 0.4 * rng.standard_normal()),
-        amp_chest=float(0.4 + 0.3 * rng.standard_normal()),
-        amp_ankle=float(0.8 + 0.5 * rng.standard_normal()),
-        hr_mean=float(70 + 12 * idx + 5 * rng.standard_normal()),
+        freq_hand=float(cluster_base * (0.85 + 0.3 * rng.random())),
+        freq_chest=float(cluster_base * (0.8 + 0.4 * rng.random())),
+        freq_ankle=float(cluster_base * (0.9 + 0.2 * rng.random())),
+        amp_hand=float(0.5 + 0.3 * rng.standard_normal()),
+        amp_chest=float(0.4 + 0.2 * rng.standard_normal()),
+        amp_ankle=float(0.6 + 0.4 * rng.standard_normal()),
+        hr_mean=float(70 + 8 * cluster + 3 * (idx % 3) + 4 * rng.standard_normal()),
     )
 
 
@@ -58,27 +64,28 @@ def _synth_imu(
     """Generate one IMU's 9 channels (accel, gyro, mag) as (T, 9)."""
     t = np.arange(n_samples) / SAMPLING_RATE_HZ
     out = np.zeros((n_samples, 9), dtype=np.float32)
-    # Accel: dominant fundamental + harmonics.
+    noise_scale = 0.35 * abs(amp) + 0.05
+    # Accel: dominant fundamental + harmonics + sizeable noise.
     for c in range(3):
         phase = rng.uniform(0, 2 * np.pi)
         out[:, c] = (
             amp * np.sin(2 * np.pi * freq * t + phase)
             + 0.3 * amp * np.sin(2 * np.pi * 2 * freq * t + phase)
-            + 0.05 * rng.standard_normal(n_samples)
+            + noise_scale * rng.standard_normal(n_samples)
         )
     # Gyro: lower amplitude, frequency-shifted.
     for c in range(3, 6):
         phase = rng.uniform(0, 2 * np.pi)
         out[:, c] = (
             0.5 * amp * np.sin(2 * np.pi * (freq * 0.7) * t + phase)
-            + 0.05 * rng.standard_normal(n_samples)
+            + 0.7 * noise_scale * rng.standard_normal(n_samples)
         )
-    # Mag: slow drift + small oscillation.
+    # Mag: slow drift + small oscillation + noise.
     for c in range(6, 9):
         drift = rng.standard_normal()
         out[:, c] = (
             drift + 0.2 * amp * np.sin(2 * np.pi * (freq * 0.2) * t)
-            + 0.02 * rng.standard_normal(n_samples)
+            + 0.3 * noise_scale * rng.standard_normal(n_samples)
         )
     return out
 

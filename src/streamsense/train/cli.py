@@ -148,7 +148,7 @@ def main() -> int:
         gradient_clip_val=float(cfg.train.grad_clip),
         log_every_n_steps=10,
         deterministic=False,
-        enable_progress_bar=True,
+        enable_progress_bar=bool(int(os.environ.get("STREAMSENSE_PROGRESS", "1"))),
         **fast_kwargs,
     )
 
