@@ -80,17 +80,19 @@ multimodal pipeline that you can fork.
 
 ## Latency
 
-CPU batch=1 latency for a single 5.12-second window (placeholder).
+CPU batch=1 latency for a single 5.12-second window (placeholder until the
+benchmark is run on real hardware — see `make benchmark`).
 
 | Variant | p50 (ms) | p95 (ms) | p99 (ms) |
 |---|---|---|---|
 | fp32 | TBD | TBD | TBD |
-| fp16 | TBD | TBD | TBD |
 | int8 | TBD | TBD | TBD |
 
-Target: int8 p95 under 20 ms on a modern laptop CPU. If we miss, the
-benchmark report says why and lists mitigations (op fusion, smaller
-d_model, distillation, channel pruning).
+Target: int8 p95 under 20 ms on a modern laptop CPU. The test in
+`tests/test_latency.py` asserts a loose 100 ms p95 by default so CI passes
+on slow runners; set `STRICT_LATENCY=1` to enforce the 20 ms target. If
+we miss it, mitigations to try: op fusion via ORT graph optimizations,
+smaller d_model, distillation, channel pruning.
 
 ## Ablation
 

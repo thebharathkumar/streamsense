@@ -9,8 +9,8 @@ FOLD   ?= 1
 SUBSET ?= 0
 
 .PHONY: help install install-dev download prepare prepare-synthetic \
-        train train-fast evaluate export quantize benchmark serve docker \
-        test lint format clean
+        train train-fast evaluate ablation export quantize benchmark serve \
+        docker test lint format clean
 
 help:
 	@echo "Common targets:"
@@ -21,6 +21,7 @@ help:
 	@echo "  train          Train one fold with the default config"
 	@echo "  train-fast     Short 5-epoch sanity run"
 	@echo "  evaluate       Evaluate best checkpoint, write report"
+	@echo "  ablation       Train all variants for one fold + ablation table"
 	@echo "  export         Export best checkpoint to ONNX"
 	@echo "  quantize       Static int8 quantization of the ONNX model"
 	@echo "  benchmark      Latency benchmark (fp32, fp16, int8)"
@@ -53,6 +54,9 @@ train-fast:
 
 evaluate:
 	$(PYTHON) scripts/evaluate.py --config $(CONFIG) --fold $(FOLD)
+
+ablation:
+	$(PYTHON) scripts/run_ablation.py --config $(CONFIG) --fold $(FOLD)
 
 export:
 	$(PYTHON) scripts/export_onnx.py --config $(CONFIG) --fold $(FOLD)
