@@ -1,5 +1,12 @@
 # streamsense-har
 
+<!-- brag:start -->
+<p align="center">
+  <a href="https://github.com/thebharathkumar/streamsense/blob/HEAD/docs/brag/streamsense.mp4"><img src="https://raw.githubusercontent.com/thebharathkumar/streamsense/HEAD/docs/brag/streamsense.gif" alt="streamsense: 15-second technical brief" width="100%"></a>
+</p>
+<p align="center"><sub>15-second technical brief. <a href="https://github.com/thebharathkumar/streamsense/blob/HEAD/docs/brag/streamsense.mp4">Full MP4 with sound</a> &middot; more at <a href="https://thebharath.co">thebharath.co</a></sub></p>
+<!-- brag:end -->
+
 Multimodal human activity recognition (HAR) on the PAMAP2 dataset with a
 late-fusion CNN plus transformer model, ONNX deployment, int8 quantization,
 and a FastAPI inference server. Built as a focused portfolio project around
